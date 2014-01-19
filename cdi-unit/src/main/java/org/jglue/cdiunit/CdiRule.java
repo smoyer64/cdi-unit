@@ -4,8 +4,10 @@
 package org.jglue.cdiunit;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import javax.enterprise.context.ContextNotActiveException;
 import javax.naming.InitialContext;
 
 import org.jboss.weld.bootstrap.api.Bootstrap;
@@ -69,6 +71,15 @@ public class CdiRule implements TestRule {
 		}
 		
 		return createStatement(object, method);
+//		return new Statement() {
+//			
+//			public void evaluate() throws Throwable {
+//				System.out.println("evaluate()");
+//				//originalStatement.evaluate();
+//				throw new ContextNotActiveException();
+//			}
+//			
+//		};
 	}
 	
 	private Statement createStatement(final Object object, final Method method) {
@@ -76,6 +87,7 @@ public class CdiRule implements TestRule {
 
             @Override
             public void evaluate() throws Throwable {
+            	System.out.println("evaluate()");
 
                 if (startupException != null) {
                     if (method.getAnnotation(Test.class).expected() == startupException.getClass()) {
@@ -83,20 +95,34 @@ public class CdiRule implements TestRule {
                     }
                     throw startupException;
                 }
+                
                 System.setProperty("java.naming.factory.initial", "org.jglue.cdiunit.internal.CdiUnitContextFactory");
                 InitialContext initialContext = new InitialContext();
                 initialContext.bind("java:comp/BeanManager", container.getBeanManager());
 
                 try {
+                	System.out.println("Invoking");
                 	method.invoke(object, new Object[0]);
-
+                } catch(InvocationTargetException e) {
+                	System.out.println("Got here");
+                	Throwable cause = e.getCause();
+                	if(cause != null) {
+	                	Class<? extends Throwable> expected = method.getAnnotation(Test.class).expected();
+	                	System.out.println("Cause: " + cause.getClass().getName());
+	                	System.out.println("Expected: " + expected.getName());
+	                	System.out.println("Equals? " + (expected == cause.getClass()));
+	                    if (expected != null && expected.isAssignableFrom(cause.getClass())) {
+	                        return;
+	                    }
+	                    throw cause;
+                	}
+                	throw e;
                 } finally {
                     initialContext.close();
                     weld.shutdown();
-
                 }
-
             }
+            
         };
 	}
     
@@ -117,7 +143,6 @@ public class CdiRule implements TestRule {
             };
 
             try {
-
                 container = weld.initialize();
             } catch (Throwable e) {
                 if (startupException == null) {
