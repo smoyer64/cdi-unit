@@ -90,8 +90,16 @@ public class CdiRule implements TestRule {
             	System.out.println("evaluate()");
 
                 if (startupException != null) {
+                	System.out.println("startException is not null");
+                	System.out.println(startupException);
+                	System.out.println(startupException.getCause());
                     if (method.getAnnotation(Test.class).expected() == startupException.getClass()) {
+                    	System.out.println("equals matched");
                         return;
+                    }
+                    if(method.getAnnotation(Test.class).expected().isAssignableFrom(startupException.getClass())) {
+                    	System.out.println("isAssignableFrom matched");
+                    	return;
                     }
                     throw startupException;
                 }
@@ -111,7 +119,12 @@ public class CdiRule implements TestRule {
 	                	System.out.println("Cause: " + cause.getClass().getName());
 	                	System.out.println("Expected: " + expected.getName());
 	                	System.out.println("Equals? " + (expected == cause.getClass()));
+	                	if(expected == cause.getClass()) {
+	                		System.out.println("equals matched");
+	                		return;
+	                	}
 	                    if (expected != null && expected.isAssignableFrom(cause.getClass())) {
+	                    	System.out.println("isAssignableFrom matched");
 	                        return;
 	                    }
 	                    throw cause;
@@ -145,6 +158,7 @@ public class CdiRule implements TestRule {
             try {
                 container = weld.initialize();
             } catch (Throwable e) {
+            	e.printStackTrace();
                 if (startupException == null) {
                     startupException = e;
                 }
@@ -168,9 +182,11 @@ public class CdiRule implements TestRule {
     private <T> T createTest(Class<T> testClass) {
     	System.out.println("is container null? " + (container == null));
     	System.out.println("clazz is: " + clazz.getName());
-    	container.instance();
 
-        T t = container.instance().select(testClass).get();
+    	T t = null;
+    	if(container != null) {
+    		t = container.instance().select(testClass).get();
+    	}
 
         return t;
     }

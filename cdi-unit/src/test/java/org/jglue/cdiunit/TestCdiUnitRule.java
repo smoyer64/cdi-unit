@@ -20,7 +20,6 @@ import java.lang.annotation.Annotation;
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.Conversation;
-import javax.enterprise.context.Dependent;
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.Bean;
@@ -40,7 +39,7 @@ import org.mockito.Mockito;
 		ExcludeExtension.class })
 public class TestCdiUnitRule extends BaseTest {
 	
-	private CdiRule cdiRule = new CdiRule();
+	private CdiRule cdiRule; // = new CdiRule();
 	
 	@Rule
 	public CdiRule getRule() {
@@ -92,6 +91,7 @@ public class TestCdiUnitRule extends BaseTest {
 	
 	public TestCdiUnitRule() {
 		System.out.println("TestCdiUnitRule()");
+		cdiRule = new CdiRule();
 	}
 
 	@Test
